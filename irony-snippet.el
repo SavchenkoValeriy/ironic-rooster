@@ -1,4 +1,4 @@
-;;; irony-snippet.el --- Snippet support for Irony-Mode
+;;; ironic-rooster-snippet.el --- Snippet support for Ironic-Rooster-Mode
 
 ;; Copyright (C) 2013-2014  Guillaume Papin
 
@@ -24,7 +24,7 @@
 ;; maybe further frameworks later.
 ;;
 ;; It is possible to check snippet support by calling
-;; `irony-snippet-available-p'.
+;; `ironic-rooster-snippet-available-p'.
 ;;
 ;; Note: Some YASnippet versions require to have
 ;;       `yas/minor-mode' or `yas-minor-mode' enabled to work.
@@ -34,7 +34,7 @@
 
 ;; Private variables
 ;;
-(defvar irony-snippet--expand-function nil
+(defvar ironic-rooster-snippet--expand-function nil
   "Function to expand a snippet at a given point (by default to
 the current position).
 
@@ -47,50 +47,50 @@ Will be set to nil if no snippet expansion function is found.")
 ;;
 ;; "Public" functions
 ;;
-(defun irony-snippet-available-p ()
+(defun ironic-rooster-snippet-available-p ()
   "Return t if snippets are supported."
-  (and (irony-snippet--get-expand-function)
-       (not (irony-snippet--yas-disabled-p))))
+  (and (ironic-rooster-snippet--get-expand-function)
+       (not (ironic-rooster-snippet--yas-disabled-p))))
 
-(defun irony-snippet-expand (snippet-str &optional pos)
+(defun ironic-rooster-snippet-expand (snippet-str &optional pos)
   "Expand SNIPPET-STR starting at POS.
 
-If `irony-snippet-available-p' return t then"
-  (let ((expand-func (irony-snippet--get-expand-function)))
+If `ironic-rooster-snippet-available-p' return t then"
+  (let ((expand-func (ironic-rooster-snippet--get-expand-function)))
     (funcall expand-func snippet-str pos)))
 
 
 ;; Private functions
 ;;
-(defun irony-snippet--get-expand-function ()
-  (unless irony-snippet--expand-function
-    (irony-snippet--init-yas))
-  irony-snippet--expand-function)
+(defun ironic-rooster-snippet--get-expand-function ()
+  (unless ironic-rooster-snippet--expand-function
+    (ironic-rooster-snippet--init-yas))
+  ironic-rooster-snippet--expand-function)
 
-(defun irony-snippet--init-yas ()
+(defun ironic-rooster-snippet--init-yas ()
   ;; find the snippet expand function
   (when (require 'yasnippet nil t)
     (let ((yas-version (or (and (boundp 'yas--version) yas--version)
                            (and (boundp 'yas/version) yas/version)))) ;for old versions
       (when (stringp yas-version)
         (setq yas-version (replace-regexp-in-string "(\\|)" "" yas-version))
-        (setq irony-snippet--expand-function
+        (setq ironic-rooster-snippet--expand-function
               ;; (string= ... "0.6.0c"), the 'c' suffix is not supported by
               ;; `version-to-list' in emacs versions < 24, treat this one
               ;; specifically.
               (cond
                ((or (string= yas-version "0.6.0c")
                     (version<= yas-version "0.6.0b"))
-                'irony-snippet--expand-yas-1)
+                'ironic-rooster-snippet--expand-yas-1)
                ;; `version<' thinks "0.8beta" < "0.8", we want to consider
                ;; anything starting with "0.8" as "0.8" and more.
                ((and (version< yas-version "0.8")
                      (not (string-prefix-p "0.8" yas-version)))
-                'irony-snippet--expand-yas-2)
+                'ironic-rooster-snippet--expand-yas-2)
                (t
-                'irony-snippet--expand-yas-3)))))))
+                'ironic-rooster-snippet--expand-yas-3)))))))
 
-(defun irony-snippet--yas-disabled-p ()
+(defun ironic-rooster-snippet--yas-disabled-p ()
   "If the current yasnippet version offers a minor-mode, check if
 this mode is disable by returning t, otherwise returns nil and
 it's partially safe to assume that yasnippet expansion can be
@@ -103,33 +103,33 @@ used."
     (if (boundp 'yas/minor-mode)
         (not yas/minor-mode))))
 
-(defun irony-snippet--expand-yas-1 (snippet-str &optional pos)
+(defun ironic-rooster-snippet--expand-yas-1 (snippet-str &optional pos)
   "Expand snippets for YASnippet version <= 0.6.0c."
   (declare-function yas/expand-snippet "ext:yasnippet" t nil)
-  (unless (irony-snippet--yas-disabled-p)
+  (unless (ironic-rooster-snippet--yas-disabled-p)
     (yas/expand-snippet (or pos (point))
                         (or pos (point))
                         snippet-str)))
 
-(defun irony-snippet--expand-yas-2 (snippet-str &optional pos)
+(defun ironic-rooster-snippet--expand-yas-2 (snippet-str &optional pos)
   "Expand snippets for YASnippet version < 0.8.
 
-See also `irony-snippet--expand-yas-1'."
+See also `ironic-rooster-snippet--expand-yas-1'."
   (declare-function yas/expand-snippet "ext:yasnippet" t nil)
-  (unless (irony-snippet--yas-disabled-p)
+  (unless (ironic-rooster-snippet--yas-disabled-p)
     (when pos
       (goto-char pos))
     (yas/expand-snippet snippet-str)))
 
-(defun irony-snippet--expand-yas-3 (snippet-str &optional pos)
+(defun ironic-rooster-snippet--expand-yas-3 (snippet-str &optional pos)
   "Expand snippets for YASnippet version >= 0.8.
 
-See also `irony-snippet--expand-yas-2'."
+See also `ironic-rooster-snippet--expand-yas-2'."
   (declare-function yas-expand-snippet "ext:yasnippet" t nil)
-  (unless (irony-snippet--yas-disabled-p)
+  (unless (ironic-rooster-snippet--yas-disabled-p)
     (when pos
       (goto-char pos))
     (yas-expand-snippet snippet-str)))
 
-(provide 'irony-snippet)
-;;; irony-snippet.el ends here
+(provide 'ironic-rooster-snippet)
+;;; ironic-rooster-snippet.el ends here

@@ -1,10 +1,11 @@
-;;; irony.el --- C/C++ minor mode powered by libclang
+;;; ironic-rooster.el --- C/C++ minor mode powered by libclang
 
 ;; Copyright (C) 2011-2014  Guillaume Papin
 
-;; Author: Guillaume Papin <guillaume.papin@epitech.eu>
+;; Author: Guillaume Papin <guillaume.papin@epitech.eu>,
+;;         Valeriy Savchenko <sinmipt@gmail.com>
 ;; Version: 0.2.0
-;; URL: https://github.com/Sarcasm/irony-mode
+;; URL: https://github.com/SavchenkoValeriy/ironic-rooster-mode
 ;; Compatibility: GNU Emacs 23.x, GNU Emacs 24.x
 ;; Keywords: c, convenience, tools
 ;; Package-Requires: ((cl-lib "0.5") (json "1.2"))
@@ -24,34 +25,34 @@
 
 ;;; Commentary:
 ;;
-;; This file provides `irony-mode', a minor mode for C, C++ and Objective-C.
+;; This file provides `ironic-rooster-mode', a minor mode for C, C++ and Objective-C.
 ;;
 ;; Usage:
-;;     (add-hook 'c++-mode-hook 'irony-mode)
-;;     (add-hook 'c-mode-hook 'irony-mode)
-;;     (add-hook 'objc-mode-hook 'irony-mode)
+;;     (add-hook 'c++-mode-hook 'ironic-rooster-mode)
+;;     (add-hook 'c-mode-hook 'ironic-rooster-mode)
+;;     (add-hook 'objc-mode-hook 'ironic-rooster-mode)
 ;;
 ;;     ;; replace the `completion-at-point' and `complete-symbol' bindings in
-;;     ;; irony-mode's buffers by irony-mode's asynchronous function
-;;     (defun my-irony-mode-hook ()
-;;       (define-key irony-mode-map [remap completion-at-point]
-;;         'irony-completion-at-point-async)
-;;       (define-key irony-mode-map [remap complete-symbol]
-;;         'irony-completion-at-point-async))
-;;     (add-hook 'irony-mode-hook 'my-irony-mode-hook)
+;;     ;; ironic-rooster-mode's buffers by ironic-rooster-mode's asynchronous function
+;;     (defun my-ironic-rooster-mode-hook ()
+;;       (define-key ironic-rooster-mode-map [remap completion-at-point]
+;;         'ironic-rooster-completion-at-point-async)
+;;       (define-key ironic-rooster-mode-map [remap complete-symbol]
+;;         'ironic-rooster-completion-at-point-async))
+;;     (add-hook 'ironic-rooster-mode-hook 'my-ironic-rooster-mode-hook)
 ;;
 ;;     ;; Only needed on Windows
 ;;     (when (eq system-type 'windows-nt)
 ;;       (setq w32-pipe-read-delay 0))
 ;;
 ;; See also:
-;; - https://github.com/Sarcasm/company-irony
-;; - https://github.com/Sarcasm/ac-irony
+;; - https://github.com/Sarcasm/company-ironic-rooster
+;; - https://github.com/Sarcasm/ac-ironic-rooster
 
 ;;; Code:
 
-(autoload 'irony-completion--enter "irony-completion")
-(autoload 'irony-completion--exit "irony-completion")
+(autoload 'ironic-rooster-completion--enter "ironic-rooster-completion")
+(autoload 'ironic-rooster-completion--exit "ironic-rooster-completion")
 
 (require 'cl-lib)
 
@@ -90,32 +91,32 @@ automatically buffer-local wherever it is set."
 ;; Customizable variables
 ;;
 
-(defgroup irony nil
+(defgroup ironic-rooster nil
   "C/C++ minor mode powered by libclang."
   :group 'c)
 
-(defcustom irony-lighter " Irony"
-  "Text to display in the mode line when irony mode is on."
+(defcustom ironic-rooster-lighter " Ironic-Rooster"
+  "Text to display in the mode line when ironic-rooster mode is on."
   :type 'string
-  :group 'irony)
+  :group 'ironic-rooster)
 
-(defcustom irony-user-dir (locate-user-emacs-file "irony/")
-  "Directory containing the Irony generated files.
+(defcustom ironic-rooster-user-dir (locate-user-emacs-file "ironic-rooster/")
+  "Directory containing the Ironic-Rooster generated files.
 
 The slash is expected at the end."
   :type 'directory
   :risky t
-  :group 'irony)
+  :group 'ironic-rooster)
 
-(defcustom irony-supported-major-modes '(c++-mode
+(defcustom ironic-rooster-supported-major-modes '(c++-mode
                                          c-mode
                                          objc-mode)
-  "List of modes known to be compatible with Irony."
+  "List of modes known to be compatible with Ironic-Rooster."
   :type '(repeat symbol)
-  :group 'irony)
+  :group 'ironic-rooster)
 
 ;;;###autoload
-(defcustom irony-additional-clang-options nil
+(defcustom ironic-rooster-additional-clang-options nil
   "Additional command line options to pass down to libclang.
 
 Please, do NOT use this variable to add header search paths, only
@@ -126,51 +127,51 @@ order to not override the value coming from a compilation
 database."
   :type '(repeat string)
   :options '("-Wdocumentation")
-  :group 'irony)
+  :group 'ironic-rooster)
 
-(defcustom irony-lang-compile-option-alist
+(defcustom ironic-rooster-lang-compile-option-alist
   '((c++-mode  . "c++")
     (c-mode    . "c")
     (objc-mode . "objective-c"))
   "Alist to decide the language option to used based on the `major-mode'."
   :type '(alist :key-type symbol :value-type string)
-  :group 'irony)
+  :group 'ironic-rooster)
 
-(defcustom irony-cmake-executable "cmake"
+(defcustom ironic-rooster-cmake-executable "cmake"
   "Name or path of the CMake executable."
   :type 'string
-  :group 'irony)
+  :group 'ironic-rooster)
 
-(defcustom irony-server-source-dir
-  (expand-file-name "server" (file-name-directory (find-library-name "irony")))
-  "Points to the irony-server source directory.
+(defcustom ironic-rooster-server-source-dir
+  (expand-file-name "server" (file-name-directory (find-library-name "ironic-rooster")))
+  "Points to the ironic-rooster-server source directory.
 
 This should point to the directory that contains the top-most
 CMakeLists.txt used to build the server."
   :type 'directory
-  :group 'irony)
+  :group 'ironic-rooster)
 
-(defcustom irony-server-build-dir nil
-  "Build directory for irony-server.
+(defcustom ironic-rooster-server-build-dir nil
+  "Build directory for ironic-rooster-server.
 
 If set to nil the default is to create a build directory in
-`temporary-file-directory'/build-irony-server-`(irony-version)'."
+`temporary-file-directory'/build-ironic-rooster-server-`(ironic-rooster-version)'."
   :type 'directory
-  :group 'irony)
+  :group 'ironic-rooster)
 
-(defcustom irony-server-install-prefix irony-user-dir
-  "Installation prefix used to install irony-server.
+(defcustom ironic-rooster-server-install-prefix ironic-rooster-user-dir
+  "Installation prefix used to install ironic-rooster-server.
 
-The irony-server executable is expected to be in
-`irony-server-install-prefix'/bin/."
+The ironic-rooster-server executable is expected to be in
+`ironic-rooster-server-install-prefix'/bin/."
   :type 'directory
-  :group 'irony)
+  :group 'ironic-rooster)
 
 
 ;;
 ;; Public/API variables
 ;;
-;; Non-customizable variables provided by Irony that can be useful to other
+;; Non-customizable variables provided by Ironic-Rooster that can be useful to other
 ;; packages.
 ;;
 ;; Note that they shouldn't be modified directly by external packages, just
@@ -178,26 +179,26 @@ The irony-server executable is expected to be in
 ;;
 
 ;; TODO: make this variable public when the CDB API stabilizes.
-(defvar-local irony--compile-options nil
+(defvar-local ironic-rooster--compile-options nil
   "Compile options for the current file.
 
 The compile options used by the compiler to build the current
 buffer file.")
 
 ;; TODO: make this variable public when the CDB API stabilizes.
-(defvar-local irony--working-directory nil
+(defvar-local ironic-rooster--working-directory nil
   "The working directory to pass to libclang, if any.")
 
 
 ;;
 ;; Internal variables
 ;;
-;; The prefix `irony--' is used when something can completely change (or
+;; The prefix `ironic-rooster--' is used when something can completely change (or
 ;; disappear) from one release to the other.
 ;;
 ;; -- https://lists.gnu.org/archive/html/emacs-devel/2013-06/msg01129.html
 
-(defconst irony--eot "\n;;EOT\n"
+(defconst ironic-rooster--eot "\n;;EOT\n"
   "String sent by the server to signal the end of a response.")
 
 
@@ -205,26 +206,26 @@ buffer file.")
 ;; Utility functions & macros
 ;;
 
-(defmacro irony--aif (test if-expr &rest else-body)
+(defmacro ironic-rooster--aif (test if-expr &rest else-body)
   (declare (indent 2))
   `(let ((it ,test))
      (if it
          ,if-expr
        (progn ,@else-body))))
 
-(defmacro irony--awhen (test &rest body)
+(defmacro ironic-rooster--awhen (test &rest body)
   (declare (indent 1))
   `(let ((it ,test))
      (when it
        (progn ,@body))))
 
-(defun irony--assoc-all (key list)
+(defun ironic-rooster--assoc-all (key list)
   (delq nil (mapcar #'(lambda (c)
                         (when (equal (car c) key)
                           c))
                     list)))
 
-(defmacro irony--without-narrowing (&rest body)
+(defmacro ironic-rooster--without-narrowing (&rest body)
   "Remove the effect of narrowing for the current buffer.
 
 Note: If `save-excursion' is needed for BODY, it should be used
@@ -234,11 +235,11 @@ before calling this macro."
      (widen)
      (progn ,@body)))
 
-(defun irony--buffer-size-in-bytes ()
+(defun ironic-rooster--buffer-size-in-bytes ()
   "Return the buffer size, in bytes."
   (1- (position-bytes (point-max))))
 
-(defun irony--read-char-choice (prompt chars)
+(defun ironic-rooster--read-char-choice (prompt chars)
   "Wrapper around `read-char-choice', available since Emacs 24."
   (setq prompt (concat prompt " [" chars "]: "))
   (if (fboundp 'read-char-choice)
@@ -250,7 +251,7 @@ before calling this macro."
         (setq k (read-char-exclusive prompt)))
       k)))
 
-(defun irony--shorten-path (path)
+(defun ironic-rooster--shorten-path (path)
   "Make PATH as short as possible.
 
 The given path can be considered understandable by human but not
@@ -262,12 +263,12 @@ to be displayed to the user."
         relative
       abbreviated)))
 
-(defun irony--split-command-line-1 (quoted-str)
+(defun ironic-rooster--split-command-line-1 (quoted-str)
   "Remove the escaped quotes and backlash from a QUOTED-STR.
 
 Return a list of the final characters in the reverse order.
 
-Only to be consumed by `irony--split-command-line'."
+Only to be consumed by `ironic-rooster--split-command-line'."
   (let ((len (length quoted-str))
         (i 0)
         ch next-ch
@@ -287,7 +288,7 @@ Only to be consumed by `irony--split-command-line'."
 ;; TODO: rewrite the function correctly to handle things like the following:
 ;;
 ;; "/usr/bin/clang++ -Irelative -DSOMEDEF=\"With spaces, quotes and \\-es.\" <args...>"
-(defun irony--split-command-line (cmd-line)
+(defun ironic-rooster--split-command-line (cmd-line)
   "Split CMD-LINE into a list of arguments.
 
 Takes care of double quotes as well as backslash.
@@ -316,9 +317,9 @@ breaks with escaped quotes in compile_commands.json, such as in:
        ((eq ch ?\")                     ;quoted string
         (let ((endq (string-match-p "[^\\]\"" cmd-line i)))
           (unless endq
-            (error "Irony: ill formed command line"))
+            (error "Ironic-Rooster: ill formed command line"))
           (let ((quoted-str (substring cmd-line (1+ i) (1+ endq))))
-            (setq cur-arg (append (irony--split-command-line-1 quoted-str)
+            (setq cur-arg (append (ironic-rooster--split-command-line-1 quoted-str)
                                   cur-arg)
                   i (+ endq 2)))))
        (t                             ;a valid char
@@ -342,51 +343,51 @@ breaks with escaped quotes in compile_commands.json, such as in:
 ;; Mode
 ;;
 
-(defvar irony-mode-map (make-sparse-keymap)
-  "Keymap used in `irony-mode' buffers.")
+(defvar ironic-rooster-mode-map (make-sparse-keymap)
+  "Keymap used in `ironic-rooster-mode' buffers.")
 
 ;;;###autoload
-(define-minor-mode irony-mode
+(define-minor-mode ironic-rooster-mode
   "Minor mode for C, C++ and Objective-C, powered by libclang."
   nil
-  irony-lighter
-  irony-mode-map
-  :group 'irony
-  (if irony-mode
-      (irony--mode-enter)
-    (irony--mode-exit)))
+  ironic-rooster-lighter
+  ironic-rooster-mode-map
+  :group 'ironic-rooster
+  (if ironic-rooster-mode
+      (ironic-rooster--mode-enter)
+    (ironic-rooster--mode-exit)))
 
-(defun irony--mode-enter ()
+(defun ironic-rooster--mode-enter ()
   ;; warn the user about modes such as php-mode who inherits c-mode
-  (when (not (memq major-mode irony-supported-major-modes))
-    (display-warning 'irony "Major mode is unknown to Irony,\
- see `irony-supported-major-modes'."))
+  (when (not (memq major-mode ironic-rooster-supported-major-modes))
+    (display-warning 'ironic-rooster "Major mode is unknown to Ironic-Rooster,\
+ see `ironic-rooster-supported-major-modes'."))
   ;; warn the user about Windows-specific issues
   (when (eq system-type 'windows-nt)
     (cond
      ((version< emacs-version "24.4")
-      (display-warning 'irony "Emacs >= 24.4 expected on Windows."))
+      (display-warning 'ironic-rooster "Emacs >= 24.4 expected on Windows."))
      ((and (boundp 'w32-pipe-read-delay) (> w32-pipe-read-delay 0))
-      (display-warning 'irony "Performance will be bad because a\
+      (display-warning 'ironic-rooster "Performance will be bad because a\
  pipe delay is set for this platform (see variable\
  `w32-pipe-read-delay')."))))
-  (irony-completion--enter))
+  (ironic-rooster-completion--enter))
 
-(defun irony--mode-exit ()
-  (irony-completion--exit))
+(defun ironic-rooster--mode-exit ()
+  (ironic-rooster-completion--exit))
 
 ;;;###autoload
-(defun irony-version (&optional show-version)
-  "Return the version number of the file irony.el.
+(defun ironic-rooster-version (&optional show-version)
+  "Return the version number of the file ironic-rooster.el.
 
 If called interactively display the version in the echo area."
   (interactive (list t))
   ;; Shamelessly stolen from `company-mode'.
   (with-temp-buffer
-    (insert-file-contents (find-library-name "irony"))
+    (insert-file-contents (find-library-name "ironic-rooster"))
     (let ((v (lm-version)))
       (when show-version
-        (message "irony version: %s" v))
+        (message "ironic-rooster version: %s" v))
       v)))
 
 
@@ -394,11 +395,11 @@ If called interactively display the version in the echo area."
 ;; Compile options handling
 ;;
 
-(defun irony--lang-compile-option ()
-  (irony--awhen (cdr-safe (assq major-mode irony-lang-compile-option-alist))
+(defun ironic-rooster--lang-compile-option ()
+  (ironic-rooster--awhen (cdr-safe (assq major-mode ironic-rooster-lang-compile-option-alist))
     (list "-x" it)))
 
-(defun irony--extract-working-directory-option (flags)
+(defun ironic-rooster--extract-working-directory-option (flags)
   "Return working directory specified on the command line, if
 any."
   (catch 'found
@@ -412,20 +413,20 @@ any."
          (t
           (setq flags (cdr flags))))))))
 
-(defun irony--adjust-compile-options ()
+(defun ironic-rooster--adjust-compile-options ()
   "The compile options to send to libclang."
   ;; TODO: if current buffer has no associated file (will be sent as '-') but is
   ;; in an existing directory, we will want to add -I (directory-file-name
   ;; buffer-file-name) to find the relative headers
   (append
-   (irony--lang-compile-option)
-   (irony--awhen irony--working-directory
-     (unless (irony--extract-working-directory-option irony--compile-options)
+   (ironic-rooster--lang-compile-option)
+   (ironic-rooster--awhen ironic-rooster--working-directory
+     (unless (ironic-rooster--extract-working-directory-option ironic-rooster--compile-options)
        (list "-working-directory" it)))
-   irony-additional-clang-options
-   irony--compile-options))
+   ironic-rooster-additional-clang-options
+   ironic-rooster--compile-options))
 
-(defun irony--extract-user-search-paths (compile-options work-dir)
+(defun ironic-rooster--extract-user-search-paths (compile-options work-dir)
   "Retrieve the user search paths present in COMPILE-OPTIONS.
 
 Relative paths are expanded to be relative to WORK-DIR.
@@ -435,7 +436,7 @@ directory (`file-name-as-directory').
 
 Note: WORK-DIR is not used when the compile option
 '-working-directory=<directory>' is detected in COMPILE-OPTIONS."
-  (setq work-dir (or (irony--extract-working-directory-option compile-options)
+  (setq work-dir (or (ironic-rooster--extract-working-directory-option compile-options)
                      work-dir))
   (let (include-dirs opt)
     (while (setq opt (car compile-options))
@@ -455,19 +456,19 @@ Note: WORK-DIR is not used when the compile option
 
 
 ;;
-;; Irony-Server setup
+;; Ironic-Rooster-Server setup
 ;;
 
-(defvar irony--server-install-command-history nil)
-(defun irony--install-server-read-command (command)
+(defvar ironic-rooster--server-install-command-history nil)
+(defun ironic-rooster--install-server-read-command (command)
   (read-shell-command
    "Install command: " command
-   (if (equal (car irony--server-install-command-history) command)
-       '(irony--server-install-command-history . 1)
-     'irony--server-install-command-history)))
+   (if (equal (car ironic-rooster--server-install-command-history) command)
+       '(ironic-rooster--server-install-command-history . 1)
+     'ironic-rooster--server-install-command-history)))
 
-(defun irony-install-server (command)
-  "Install or reinstall the Irony server.
+(defun ironic-rooster-install-server (command)
+  "Install or reinstall the Ironic-Rooster server.
 
 The installation requires CMake and the libclang developpement package."
   (interactive
@@ -475,124 +476,124 @@ The installation requires CMake and the libclang developpement package."
                 (format
                  (concat "%s %s %s && %s --build . "
                          "--use-stderr --config Release --target install")
-                 (shell-quote-argument irony-cmake-executable)
+                 (shell-quote-argument ironic-rooster-cmake-executable)
                  (shell-quote-argument (concat "-DCMAKE_INSTALL_PREFIX="
                                                (expand-file-name
-                                                irony-server-install-prefix)))
-                 (shell-quote-argument irony-server-source-dir)
-                 (shell-quote-argument irony-cmake-executable))))
-           (irony--install-server-read-command command))))
-  (let ((build-dir (or irony-server-build-dir
+                                                ironic-rooster-server-install-prefix)))
+                 (shell-quote-argument ironic-rooster-server-source-dir)
+                 (shell-quote-argument ironic-rooster-cmake-executable))))
+           (ironic-rooster--install-server-read-command command))))
+  (let ((build-dir (or ironic-rooster-server-build-dir
                        (concat 
                         (file-name-as-directory temporary-file-directory)
-                        (file-name-as-directory (format "build-irony-server-%s"
-                                                        (irony-version)))))))
+                        (file-name-as-directory (format "build-ironic-rooster-server-%s"
+                                                        (ironic-rooster-version)))))))
     (make-directory build-dir t)
     (let ((default-directory build-dir))
       ;; we need to kill the process to be able to install a new one,
       ;; at least on Windows
-      (irony-server-kill)
+      (ironic-rooster-server-kill)
       (with-current-buffer (compilation-start command nil
                                               #'(lambda (maj-mode)
-                                                  "*irony-server build*"))
+                                                  "*ironic-rooster-server build*"))
         (setq-local compilation-finish-functions
-                    '(irony--server-install-finish-function))))))
+                    '(ironic-rooster--server-install-finish-function))))))
 
-(defun irony--server-install-finish-function (buffer msg)
+(defun ironic-rooster--server-install-finish-function (buffer msg)
   (if (string= "finished\n" msg)
-      (message "irony-server installed successfully!")
-    (message "Failed to build irony-server, you are on your own buddy!")))
+      (message "ironic-rooster-server installed successfully!")
+    (message "Failed to build ironic-rooster-server, you are on your own buddy!")))
 
-(defun irony--locate-server-executable ()
-  "Check if an irony-server exists for the current buffer."
-  (let ((exe (expand-file-name "bin/irony-server" irony-server-install-prefix)))
+(defun ironic-rooster--locate-server-executable ()
+  "Check if an ironic-rooster-server exists for the current buffer."
+  (let ((exe (expand-file-name "bin/ironic-rooster-server" ironic-rooster-server-install-prefix)))
     (condition-case err
-        (let ((irony-server-version (car (process-lines exe "--version"))))
-          (if (and (string-match "^irony-server version " irony-server-version)
-                   (version= (irony-version)
-                             (substring irony-server-version
-                                        (length "irony-server version "))))
-              ;; irony-server is working and up-to-date!
+        (let ((ironic-rooster-server-version (car (process-lines exe "--version"))))
+          (if (and (string-match "^ironic-rooster-server version " ironic-rooster-server-version)
+                   (version= (ironic-rooster-version)
+                             (substring ironic-rooster-server-version
+                                        (length "ironic-rooster-server version "))))
+              ;; ironic-rooster-server is working and up-to-date!
               exe
-            (message "irony-server version mismatch: %s"
+            (message "ironic-rooster-server version mismatch: %s"
                      (substitute-command-keys
-                      "type `\\[irony-install-server]' to reinstall"))
+                      "type `\\[ironic-rooster-install-server]' to reinstall"))
             nil))
       (error
        (if (file-executable-p exe)
            ;; failed to execute due to a runtime problem, i.e: libclang.so isn't
            ;; in the ld paths
-           (message "error: irony-server is broken, good luck buddy! %s"
+           (message "error: ironic-rooster-server is broken, good luck buddy! %s"
                     (error-message-string err))
-         ;; irony-server doesn't exists, first time irony-mode is used? inform
+         ;; ironic-rooster-server doesn't exists, first time ironic-rooster-mode is used? inform
          ;; the user about how to build the executable
          (message "%s"
                   (substitute-command-keys
-                   "Type `\\[irony-install-server]' to install irony-server")))
+                   "Type `\\[ironic-rooster-install-server]' to install ironic-rooster-server")))
        ;; return nil on error
        nil))))
 
 
 ;;
-;; irony-server process management.
+;; ironic-rooster-server process management.
 ;;
 
-(defvar irony--server-executable nil)
-(defvar irony--server-process nil)
-(defvar irony--server-buffer " *Irony*"
-  "The name of the buffer for the irony process to run in.
+(defvar ironic-rooster--server-executable nil)
+(defvar ironic-rooster--server-process nil)
+(defvar ironic-rooster--server-buffer " *Ironic-Rooster*"
+  "The name of the buffer for the ironic-rooster process to run in.
 
 When using a leading space, the buffer is hidden from the buffer
 list (and undo information is not kept).")
 
-(defun irony--start-server-process ()
-  (when (setq irony--server-executable (or irony--server-executable
-                                           (irony--locate-server-executable)))
+(defun ironic-rooster--start-server-process ()
+  (when (setq ironic-rooster--server-executable (or ironic-rooster--server-executable
+                                           (ironic-rooster--locate-server-executable)))
     (let ((process-connection-type nil)
           (process-adaptive-read-buffering nil)
           process)
       (setq process
             (start-process-shell-command
-             "Irony"                    ;process name
-             irony--server-buffer       ;buffer
+             "Ironic-Rooster"                    ;process name
+             ironic-rooster--server-buffer       ;buffer
              (format "%s -i 2> %s"      ;command
-                     (shell-quote-argument irony--server-executable)
+                     (shell-quote-argument ironic-rooster--server-executable)
                      (expand-file-name
-                      (format-time-string "irony.%Y-%m-%d_%Hh-%Mm-%Ss.log")
+                      (format-time-string "ironic-rooster.%Y-%m-%d_%Hh-%Mm-%Ss.log")
                       temporary-file-directory))))
-      (buffer-disable-undo irony--server-buffer)
+      (buffer-disable-undo ironic-rooster--server-buffer)
       (set-process-query-on-exit-flag process nil)
-      (set-process-sentinel process 'irony--server-process-sentinel)
-      (set-process-filter process 'irony--server-process-filter)
+      (set-process-sentinel process 'ironic-rooster--server-process-sentinel)
+      (set-process-filter process 'ironic-rooster--server-process-filter)
       process)))
 
 ;;;###autoload
-(defun irony-server-kill ()
-  "Kill the running irony-server process, if any."
+(defun ironic-rooster-server-kill ()
+  "Kill the running ironic-rooster-server process, if any."
   (interactive)
-  (when (and irony--server-process (process-live-p irony--server-process))
-    (kill-process irony--server-process)
-    (setq irony--server-process nil)))
+  (when (and ironic-rooster--server-process (process-live-p ironic-rooster--server-process))
+    (kill-process ironic-rooster--server-process)
+    (setq ironic-rooster--server-process nil)))
 
-(defun irony--get-server-process-create ()
-  (if (and irony--server-process
-           (process-live-p irony--server-process))
-      irony--server-process
-    (setq irony--server-process (irony--start-server-process))))
+(defun ironic-rooster--get-server-process-create ()
+  (if (and ironic-rooster--server-process
+           (process-live-p ironic-rooster--server-process))
+      ironic-rooster--server-process
+    (setq ironic-rooster--server-process (ironic-rooster--start-server-process))))
 
-(defun irony--server-process-sentinel (process event)
+(defun ironic-rooster--server-process-sentinel (process event)
   (unless (process-live-p process)
-    (setq irony--server-process nil)
-    (message "irony process stopped!")))
+    (setq ironic-rooster--server-process nil)
+    (message "ironic-rooster process stopped!")))
 
-(defun irony--process-server-response (process response)
+(defun ironic-rooster--process-server-response (process response)
   (let ((sexp (read response))
-        (callback (irony--server-process-pop-callback process)))
+        (callback (ironic-rooster--server-process-pop-callback process)))
     (with-demoted-errors "Warning: %S"
       (apply (car callback) sexp (cdr callback)))))
 
-(defun irony--server-process-filter (process output)
-  "Handle output that come from an irony-server process."
+(defun ironic-rooster--server-process-filter (process output)
+  "Handle output that come from an ironic-rooster-server process."
   (let ((pbuf (process-buffer process))
         responses)
     ;; append output to process buffer
@@ -602,9 +603,9 @@ list (and undo information is not kept).")
           (goto-char (process-mark process))
           (insert output)
           (set-marker (process-mark process) (point))
-          ;; check if the message is complete based on `irony--eot'
+          ;; check if the message is complete based on `ironic-rooster--eot'
           (goto-char (point-min))
-          (while (search-forward irony--eot nil t)
+          (while (search-forward ironic-rooster--eot nil t)
             (let ((response (buffer-substring-no-properties (point-min)
                                                             (point))))
               (delete-region (point-min) (point))
@@ -612,18 +613,18 @@ list (and undo information is not kept).")
           (goto-char (process-mark process)))))
     ;; Handle all responses.
     (mapc #'(lambda (r)
-              (irony--process-server-response process r))
+              (ironic-rooster--process-server-response process r))
           (nreverse responses))))
 
-(defun irony--server-process-push-callback (p cb)
-  (let ((callbacks (process-get p 'irony-callback-stack)))
+(defun ironic-rooster--server-process-push-callback (p cb)
+  (let ((callbacks (process-get p 'ironic-rooster-callback-stack)))
     (if callbacks
         (nconc callbacks (list cb))
-      (process-put p 'irony-callback-stack (list cb)))))
+      (process-put p 'ironic-rooster-callback-stack (list cb)))))
 
-(defun irony--server-process-pop-callback (p)
-  (let ((callbacks (process-get p 'irony-callback-stack)))
-    (process-put p 'irony-callback-stack (cdr callbacks))
+(defun ironic-rooster--server-process-pop-callback (p)
+  (let ((callbacks (process-get p 'ironic-rooster-callback-stack)))
+    (process-put p 'ironic-rooster-callback-stack (cdr callbacks))
     (car callbacks)))
 
 
@@ -631,8 +632,8 @@ list (and undo information is not kept).")
 ;; Server commands
 ;;
 
-(defun irony--get-buffer-path-for-server ()
-  "Get the path of the current buffer to send to irony-server.
+(defun ironic-rooster--get-buffer-path-for-server ()
+  "Get the path of the current buffer to send to ironic-rooster-server.
 
 If no such file exists on the filesystem the special file '-' is
   returned instead."
@@ -640,54 +641,54 @@ If no such file exists on the filesystem the special file '-' is
       buffer-file-name
     "-"))
 
-(defun irony--send-request (request callback &rest args)
-  (let ((process (irony--get-server-process-create))
+(defun ironic-rooster--send-request (request callback &rest args)
+  (let ((process (ironic-rooster--get-server-process-create))
         (argv (cons request args)))
     (when (and process (process-live-p process))
-      (irony--server-process-push-callback process callback)
+      (ironic-rooster--server-process-push-callback process callback)
       ;; skip narrowing to compute buffer size and content
-      (irony--without-narrowing
+      (ironic-rooster--without-narrowing
         (process-send-string process
                              (format "%s\n"
                                      (combine-and-quote-strings argv)))))))
 
-(defvar irony--sync-id 0 "ID of next sync request.")
-(defvar irony--sync-result '(-1 . nil)
+(defvar ironic-rooster--sync-id 0 "ID of next sync request.")
+(defvar ironic-rooster--sync-result '(-1 . nil)
   "The car stores the id of the result and the cdr stores the return value.")
 
-(defun irony--sync-request-callback (response id)
-  (setq irony--sync-result (cons id response)))
+(defun ironic-rooster--sync-request-callback (response id)
+  (setq ironic-rooster--sync-result (cons id response)))
 
-(defun irony--send-request-sync (request &rest args)
-  "Send a request to irony-server and wait for the result."
-  (let* ((id irony--sync-id)
-         (callback (list #'irony--sync-request-callback id)))
-    (setq irony--sync-id (1+ irony--sync-id))
+(defun ironic-rooster--send-request-sync (request &rest args)
+  "Send a request to ironic-rooster-server and wait for the result."
+  (let* ((id ironic-rooster--sync-id)
+         (callback (list #'ironic-rooster--sync-request-callback id)))
+    (setq ironic-rooster--sync-id (1+ ironic-rooster--sync-id))
     (with-local-quit
-      (let ((process (irony--get-server-process-create)))
+      (let ((process (ironic-rooster--get-server-process-create)))
         (when process
-          (apply 'irony--send-request request callback args)
-          (while (not (= id (car irony--sync-result)))
+          (apply 'ironic-rooster--send-request request callback args)
+          (while (not (= id (car ironic-rooster--sync-result)))
             (accept-process-output process))
-          (cdr irony--sync-result))))))
+          (cdr ironic-rooster--sync-result))))))
 
-(defun irony--send-parse-request (request callback &rest args)
-  "Send a request that acts on the current buffer to irony-server.
+(defun ironic-rooster--send-parse-request (request callback &rest args)
+  "Send a request that acts on the current buffer to ironic-rooster-server.
 
-This concerns mainly irony-server commands that do some work on a
+This concerns mainly ironic-rooster-server commands that do some work on a
 translation unit for libclang, the unsaved buffer data are taken
 care of."
-  (let ((process (irony--get-server-process-create))
+  (let ((process (ironic-rooster--get-server-process-create))
         (argv (append (list request
                             "--num-unsaved=1"
-                            (irony--get-buffer-path-for-server))
+                            (ironic-rooster--get-buffer-path-for-server))
                       args))
-        (compile-options (irony--adjust-compile-options)))
+        (compile-options (ironic-rooster--adjust-compile-options)))
     (when (and process (process-live-p process))
-      (irony--server-process-push-callback process callback)
+      (ironic-rooster--server-process-push-callback process callback)
       ;; skip narrowing to compute buffer size and content
-      (irony--without-narrowing
-        ;; always make sure to finish with a newline (required by irony-server
+      (ironic-rooster--without-narrowing
+        ;; always make sure to finish with a newline (required by ironic-rooster-server
         ;; to play nice with line buffering even when the file doesn't end with
         ;; a newline)
         ;;
@@ -702,7 +703,7 @@ care of."
                                      (combine-and-quote-strings argv)
                                      (combine-and-quote-strings compile-options)
                                      buffer-file-name
-                                     (irony--buffer-size-in-bytes)
+                                     (ironic-rooster--buffer-size-in-bytes)
                                      (buffer-substring (point-min) (point-max))))))))
 
 
@@ -710,49 +711,49 @@ care of."
 ;; Buffer parsing
 ;;
 
-(defvar-local irony--parse-buffer-state nil
+(defvar-local ironic-rooster--parse-buffer-state nil
   "If non-nil, state is of the form (context . status) where:
 
-- context is `irony--parse-buffer-context'
+- context is `ironic-rooster--parse-buffer-context'
 - status is one of the following symbol: requested, done")
 
-(defvar-local irony--parse-buffer-callbacks nil)
-(defvar-local irony--parse-buffer-last-results nil
+(defvar-local ironic-rooster--parse-buffer-callbacks nil)
+(defvar-local ironic-rooster--parse-buffer-last-results nil
   "Holds the last parsing results.")
 
-(defun irony--parse-buffer-context ()
-  ;; FIXME: use the ticks of all irony's files that may influence this one?
+(defun ironic-rooster--parse-buffer-context ()
+  ;; FIXME: use the ticks of all ironic-rooster's files that may influence this one?
   ;; FIXME: compile options should be part of the context? or settings the
   ;; compile options should flush the context alternatively.
   (buffer-chars-modified-tick))
 
-(defun irony--buffer-parsed-p (&optional ctx)
-  (equal irony--parse-buffer-state
-         (cons (or ctx (irony--parse-buffer-context)) 'done)))
+(defun ironic-rooster--buffer-parsed-p (&optional ctx)
+  (equal ironic-rooster--parse-buffer-state
+         (cons (or ctx (ironic-rooster--parse-buffer-context)) 'done)))
 
-(defun irony--buffer-parsing-in-progress-p (&optional ctx)
-  (equal irony--parse-buffer-state
-         (cons (or ctx (irony--parse-buffer-context)) 'requested)))
+(defun ironic-rooster--buffer-parsing-in-progress-p (&optional ctx)
+  (equal ironic-rooster--parse-buffer-state
+         (cons (or ctx (ironic-rooster--parse-buffer-context)) 'requested)))
 
-(defun irony--parse-request-handler (result context buffer)
+(defun ironic-rooster--parse-request-handler (result context buffer)
   (with-current-buffer buffer
-    (let ((callbacks irony--parse-buffer-callbacks)
+    (let ((callbacks ironic-rooster--parse-buffer-callbacks)
           (status (cond
                    ;; context out-of-date?
-                   ((not (equal context (irony--parse-buffer-context)))
+                   ((not (equal context (ironic-rooster--parse-buffer-context)))
                     'cancelled)
                    (result
                     'success)
                    (t
                     'failed))))
-      (setq irony--parse-buffer-last-results (list status)
-            irony--parse-buffer-callbacks nil
-            irony--parse-buffer-state (cons context 'done))
+      (setq ironic-rooster--parse-buffer-last-results (list status)
+            ironic-rooster--parse-buffer-callbacks nil
+            ironic-rooster--parse-buffer-state (cons context 'done))
       (mapc #'(lambda (cb) (funcall cb status)) callbacks))))
 
 ;; TODO: provide a synchronous/blocking counterpart, see how
 ;; `url-retrieve-synchronously' does it
-(defun irony--parse-buffer-async (callback &optional force)
+(defun ironic-rooster--parse-buffer-async (callback &optional force)
   "Parse the current buffer and call CALLACK when done.
 
 Parsing is effectively done only if needed, if the buffer hasn't
@@ -764,7 +765,7 @@ Callback is a function that is called with one argument, the
 status of the parsing request, the value is one of the following
 symbol:
 
-- success: parsing the file was a sucess, irony-server has
+- success: parsing the file was a sucess, ironic-rooster-server has
   up-to-date information about the buffer
 
 - failed: parsing the file resulted in a failure (file access
@@ -774,28 +775,28 @@ symbol:
   another request or if the callback is out-of-date (but not
   necessarily superseded by another request)"
   (when force
-    (setq irony--parse-buffer-state nil))
-  (let ((context (irony--parse-buffer-context)))
+    (setq ironic-rooster--parse-buffer-state nil))
+  (let ((context (ironic-rooster--parse-buffer-context)))
     (cond
-     ((irony--buffer-parsed-p context)
+     ((ironic-rooster--buffer-parsed-p context)
       ;; buffer already parsed, call callback immediately
-      (apply callback irony--parse-buffer-last-results))
-     ((irony--buffer-parsing-in-progress-p context)
+      (apply callback ironic-rooster--parse-buffer-last-results))
+     ((ironic-rooster--buffer-parsing-in-progress-p context)
       ;; the request is already pending, add callback to the list
-      (push callback irony--parse-buffer-callbacks))
+      (push callback ironic-rooster--parse-buffer-callbacks))
      (t
       ;; current request is either out-of-date or inexistant,
       ;; cancel callbacks if any, and make new request
-      (let ((obselete-callbacks irony--parse-buffer-callbacks))
-        (setq irony--parse-buffer-callbacks (list callback)
-              irony--parse-buffer-state (cons context 'requested))
-        (irony--send-parse-request "parse"
-                                   (list 'irony--parse-request-handler context
+      (let ((obselete-callbacks ironic-rooster--parse-buffer-callbacks))
+        (setq ironic-rooster--parse-buffer-callbacks (list callback)
+              ironic-rooster--parse-buffer-state (cons context 'requested))
+        (ironic-rooster--send-parse-request "parse"
+                                   (list 'ironic-rooster--parse-request-handler context
                                          (current-buffer)))
         ;; it's safer to call this last, since the function may be called recursively
         (mapc #'(lambda (cb) (funcall cb 'cancelled)) obselete-callbacks))))))
 
-(defun irony-get-type--request-handler (types)
+(defun ironic-rooster-get-type--request-handler (types)
   (when types
     (if (cdr types)
         (if (string= (car types) (cadr types))
@@ -804,25 +805,25 @@ symbol:
       (message "%s" (car types)))))
 
 ;;;###autoload
-(defun irony-get-type ()
+(defun ironic-rooster-get-type ()
     "Get the type of symbol under cursor."
   (interactive)
   (let ((line (line-number-at-pos))
         (column (1+ (- (position-bytes (point))
                        (position-bytes (point-at-bol))))))
-    (irony--parse-buffer-async
+    (ironic-rooster--parse-buffer-async
      (lambda (parse-status)
        (when (eq parse-status 'success)
-         (irony--send-request
+         (ironic-rooster--send-request
           "get-type"
-          (list 'irony-get-type--request-handler)
+          (list 'ironic-rooster-get-type--request-handler)
           (number-to-string line)
           (number-to-string column)))))))
 
-(provide 'irony)
+(provide 'ironic-rooster)
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not cl-functions)
 ;; End:
 
-;;; irony.el ends here
+;;; ironic-rooster.el ends here

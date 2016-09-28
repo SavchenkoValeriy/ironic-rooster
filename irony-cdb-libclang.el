@@ -1,4 +1,4 @@
-;;; irony-cdb-libclang.el --- Compilation Database for irony using libclang
+;;; ironic-rooster-cdb-libclang.el --- Compilation Database for ironic-rooster using libclang
 
 ;; Copyright (C) 2015  Karl Hylén
 
@@ -20,51 +20,51 @@
 
 ;;; Commentary:
 ;;
-;; Compilation Database support for Irony using libclangs CXCompilationDatabase,
+;; Compilation Database support for Ironic-Rooster using libclangs CXCompilationDatabase,
 ;; http://clang.llvm.org/doxygen/group__COMPILATIONDB.html
 
 ;;; Code:
 
-(require 'irony-cdb)
-(require 'irony-cdb-json)
+(require 'ironic-rooster-cdb)
+(require 'ironic-rooster-cdb-json)
 
 (require 'cl-lib)
 
 ;;;###autoload
-(defun irony-cdb-libclang (command &rest args)
+(defun ironic-rooster-cdb-libclang (command &rest args)
   (cl-case command
-    (get-compile-options (irony-cdb-libclang--get-compile-options))))
+    (get-compile-options (ironic-rooster-cdb-libclang--get-compile-options))))
 
-(defun irony-cdb-libclang--get-compile-options ()
-  (irony--awhen (irony-cdb-json--locate-db)
-    (irony-cdb-libclang--server-exact-flags it)))
+(defun ironic-rooster-cdb-libclang--get-compile-options ()
+  (ironic-rooster--awhen (ironic-rooster-cdb-json--locate-db)
+    (ironic-rooster-cdb-libclang--server-exact-flags it)))
 
-(defun irony-cdb-libclang--server-exact-flags (db-file)
-  "Get compilation options from irony-server.
+(defun ironic-rooster-cdb-libclang--server-exact-flags (db-file)
+  "Get compilation options from ironic-rooster-server.
 
 The parameter DB-FILE is the database file."
   (let ((build-dir (file-name-directory db-file))
         (file buffer-file-name))
-    (irony-cdb-libclang--adjust-options-and-remove-compiler
-     file (irony--send-request-sync "get-compile-options" build-dir file))))
+    (ironic-rooster-cdb-libclang--adjust-options-and-remove-compiler
+     file (ironic-rooster--send-request-sync "get-compile-options" build-dir file))))
 
-(defun irony-cdb-libclang--adjust-options-and-remove-compiler (file cmds)
+(defun ironic-rooster-cdb-libclang--adjust-options-and-remove-compiler (file cmds)
   "Remove compiler, target file FILE and output file from CMDS.
 
 The parameter CMDS is a list of conses. In each cons, the car holds the options
 and the cdr holds the working directory where the compile command was issued."
   (mapcar (lambda (cmd)
-            (let ((opt (irony-cdb--remove-compiler-from-flags (car cmd)))
+            (let ((opt (ironic-rooster-cdb--remove-compiler-from-flags (car cmd)))
                   (wdir (cdr cmd)))
               (cons
-               (irony-cdb-json--adjust-compile-options opt file wdir)
+               (ironic-rooster-cdb-json--adjust-compile-options opt file wdir)
                wdir)))
           cmds))
 
-(provide 'irony-cdb-libclang)
+(provide 'ironic-rooster-cdb-libclang)
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not cl-functions)
 ;; End:
 
-;;; irony-cdb-libclang ends here
+;;; ironic-rooster-cdb-libclang ends here

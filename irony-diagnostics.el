@@ -1,4 +1,4 @@
-;;; irony-diagnostics.el --- irony-mode diagnostic reporting
+;;; ironic-rooster-diagnostics.el --- ironic-rooster-mode diagnostic reporting
 
 ;; Copyright (C) 2014  Guillaume Papin
 
@@ -25,41 +25,41 @@
 
 ;;; Code:
 
-(require 'irony)
+(require 'ironic-rooster)
 
 (eval-when-compile
   (require 'cl))                        ;for lexical-let macro
 
 
 ;;
-;; Irony Diagnostics Interface
+;; Ironic-Rooster Diagnostics Interface
 ;;
 
-(defun irony-diagnostics-file (diagnostic)
+(defun ironic-rooster-diagnostics-file (diagnostic)
   (nth 0 diagnostic))
 
-(defun irony-diagnostics-line (diagnostic)
+(defun ironic-rooster-diagnostics-line (diagnostic)
   (nth 1 diagnostic))
 
-(defun irony-diagnostics-column (diagnostic)
+(defun ironic-rooster-diagnostics-column (diagnostic)
   (nth 2 diagnostic))
 
-(defun irony-diagnostics-severity (diagnostic)
+(defun ironic-rooster-diagnostics-severity (diagnostic)
   (nth 4 diagnostic))
 
-(defun irony-diagnostics-message (diagnostic)
+(defun ironic-rooster-diagnostics-message (diagnostic)
   (nth 5 diagnostic))
 
-(defun irony-diagnostics--request-handler (diagnostics callback buffer)
+(defun ironic-rooster-diagnostics--request-handler (diagnostics callback buffer)
   (with-current-buffer buffer
     (cond
-     ((irony--buffer-parsed-p)
+     ((ironic-rooster--buffer-parsed-p)
       (funcall callback 'success diagnostics))
      (t
       ;; buffer has become out-of-date
       (funcall callback 'cancelled "diagnostics obselete, buffer has changed")))))
 
-(defun irony-diagnostics-async (callback &optional force)
+(defun ironic-rooster-diagnostics-async (callback &optional force)
   "Perform an asynchronous diagnostic request for the current
 buffer.
 
@@ -73,7 +73,7 @@ more argument are provided. Possible values are explained below:
 
   When quering the diagnostics work, the additional argument is a
   list of diagnostic object, diagnostics fields can be queried
-  with the functions `irony-diagnostics-<xxx>'.
+  with the functions `ironic-rooster-diagnostics-<xxx>'.
 
 - error
 
@@ -87,12 +87,12 @@ more argument are provided. Possible values are explained below:
   such the diagnostics are considered no longer relevant. A
   reason string is passed as a second argument."
   (lexical-let ((cb callback))
-    (irony--parse-buffer-async
+    (ironic-rooster--parse-buffer-async
      #'(lambda (parse-status)
          (cond
           ((eq parse-status 'success)
-           (irony--send-request "diagnostics"
-                                (list 'irony-diagnostics--request-handler
+           (ironic-rooster--send-request "diagnostics"
+                                (list 'ironic-rooster-diagnostics--request-handler
                                       cb
                                       (current-buffer))))
           ((eq parse-status 'cancelled)
@@ -103,6 +103,6 @@ more argument are provided. Possible values are explained below:
            (funcall cb 'error "internal-error: unexpected parse status"))))
      force)))
 
-(provide 'irony-diagnostics)
+(provide 'ironic-rooster-diagnostics)
 
-;;; irony-diagnostics.el ends here
+;;; ironic-rooster-diagnostics.el ends here

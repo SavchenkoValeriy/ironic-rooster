@@ -1,4 +1,4 @@
-;;; irony-cdb-clang-complete.el --- .clang_complete compilation database
+;;; ironic-rooster-cdb-clang-complete.el --- .clang_complete compilation database
 
 ;; Copyright (C) 2014  Guillaume Papin
 
@@ -25,25 +25,25 @@
 
 ;;; Code:
 
-(require 'irony-cdb)
+(require 'ironic-rooster-cdb)
 
 (require 'cl-lib)
 
 ;;;###autoload
-(defun irony-cdb-clang-complete (command &rest args)
+(defun ironic-rooster-cdb-clang-complete (command &rest args)
   (cl-case command
-    (get-compile-options (irony-cdb-clang-complete--get-compile-options))))
+    (get-compile-options (ironic-rooster-cdb-clang-complete--get-compile-options))))
 
-(defun irony-cdb-clang-complete--get-compile-options ()
-  (irony--awhen (irony-cdb-clang-complete--locate-db)
-    (irony-cdb-clang-complete--load-db it)))
+(defun ironic-rooster-cdb-clang-complete--get-compile-options ()
+  (ironic-rooster--awhen (ironic-rooster-cdb-clang-complete--locate-db)
+    (ironic-rooster-cdb-clang-complete--load-db it)))
 
-(defun irony-cdb-clang-complete--locate-db ()
+(defun ironic-rooster-cdb-clang-complete--locate-db ()
   (when buffer-file-name
-    (irony--awhen (locate-dominating-file buffer-file-name ".clang_complete")
+    (ironic-rooster--awhen (locate-dominating-file buffer-file-name ".clang_complete")
       (concat (file-name-as-directory it) ".clang_complete"))))
 
-(defun irony-cdb-clang-complete--load-db (cc-file)
+(defun ironic-rooster-cdb-clang-complete--load-db (cc-file)
   (with-temp-buffer
     (insert-file-contents cc-file)
     (list
@@ -57,10 +57,10 @@
       ;; working directory
       (expand-file-name (file-name-directory cc-file))))))
 
-(provide 'irony-cdb-clang-complete)
+(provide 'ironic-rooster-cdb-clang-complete)
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not cl-functions)
 ;; End:
 
-;;; irony-cdb-clang-complete ends here
+;;; ironic-rooster-cdb-clang-complete ends here

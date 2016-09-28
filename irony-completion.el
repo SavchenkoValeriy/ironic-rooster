@@ -1,4 +1,4 @@
-;;; irony-completion.el --- irony-mode completion interface
+;;; ironic-rooster-completion.el --- ironic-rooster-mode completion interface
 
 ;; Copyright (C) 2012-2014  Guillaume Papin
 
@@ -25,8 +25,8 @@
 
 ;;; Code:
 
-(require 'irony)
-(require 'irony-snippet)
+(require 'ironic-rooster)
+(require 'ironic-rooster-snippet)
 
 (require 'cl-lib)
 
@@ -35,11 +35,11 @@
 ;; Customizable variables
 ;;
 
-(defgroup irony-completion nil
-  "Irony's completion interface."
-  :group 'irony)
+(defgroup ironic-rooster-completion nil
+  "Ironic-Rooster's completion interface."
+  :group 'ironic-rooster)
 
-(defcustom irony-completion-trigger-commands '(self-insert-command
+(defcustom ironic-rooster-completion-trigger-commands '(self-insert-command
                                                newline-and-indent
                                                c-context-line-break
                                                c-scope-operator
@@ -55,26 +55,26 @@
                                                c-electric-star)
   "List of commands to watch for asynchronous completion triggering."
   :type '(repeat function)
-  :group 'irony-completion)
+  :group 'ironic-rooster-completion)
 
 
 ;;
 ;; Internal variables
 ;;
 
-(defvar-local irony-completion--context nil)
-(defvar-local irony-completion--context-tick 0)
-(defvar-local irony-completion--request-callbacks nil)
-(defvar-local irony-completion--request-tick 0)
-(defvar-local irony-completion--candidates nil)
-(defvar-local irony-completion--candidates-tick 0)
+(defvar-local ironic-rooster-completion--context nil)
+(defvar-local ironic-rooster-completion--context-tick 0)
+(defvar-local ironic-rooster-completion--request-callbacks nil)
+(defvar-local ironic-rooster-completion--request-tick 0)
+(defvar-local ironic-rooster-completion--candidates nil)
+(defvar-local ironic-rooster-completion--candidates-tick 0)
 
 
 ;;
 ;; Utility functions
 ;;
 
-(defun irony-completion-symbol-bounds ()
+(defun ironic-rooster-completion-symbol-bounds ()
   (let ((pt (point))
         (syntax (syntax-ppss)))
     ;; no prefix for strings or comments
@@ -95,21 +95,21 @@
             (skip-chars-forward "_a-zA-Z0-9~")
             (cons pt (point))))))))
 
-(defun irony-completion-beginning-of-symbol ()
-  (car (irony-completion-symbol-bounds)))
+(defun ironic-rooster-completion-beginning-of-symbol ()
+  (car (ironic-rooster-completion-symbol-bounds)))
 
-(defun irony-completion-end-of-symbol ()
-  (cdr (irony-completion-symbol-bounds)))
+(defun ironic-rooster-completion-end-of-symbol ()
+  (cdr (ironic-rooster-completion-symbol-bounds)))
 
-(defsubst irony-completion--skip-whitespace-backwards ()
+(defsubst ironic-rooster-completion--skip-whitespace-backwards ()
   ;;(skip-syntax-backward "-") doesn't seem to care about newlines
   (skip-chars-backward " \t\n\r"))
 
-(defun irony-completion--context-pos ()
-  (irony--awhen (irony-completion-beginning-of-symbol)
+(defun ironic-rooster-completion--context-pos ()
+  (ironic-rooster--awhen (ironic-rooster-completion-beginning-of-symbol)
     (save-excursion
       (goto-char it)
-      (irony-completion--skip-whitespace-backwards)
+      (ironic-rooster-completion--skip-whitespace-backwards)
       (point))))
 
 
@@ -117,46 +117,46 @@
 ;; Functions
 ;;
 
-(defun irony-completion--enter ()
-  (add-hook 'post-command-hook 'irony-completion--post-command nil t)
-  (add-hook 'completion-at-point-functions 'irony-completion-at-point nil t))
+(defun ironic-rooster-completion--enter ()
+  (add-hook 'post-command-hook 'ironic-rooster-completion--post-command nil t)
+  (add-hook 'completion-at-point-functions 'ironic-rooster-completion-at-point nil t))
 
-(defun irony-completion--exit ()
-  (remove-hook 'post-command-hook 'irony-completion--post-command t)
-  (remove-hook 'completion-at-point-functions 'irony-completion-at-point t)
-  (setq irony-completion--context nil
-        irony-completion--candidates nil
-        irony-completion--context-tick 0
-        irony-completion--request-tick 0
-        irony-completion--request-callbacks nil
-        irony-completion--candidates-tick 0))
+(defun ironic-rooster-completion--exit ()
+  (remove-hook 'post-command-hook 'ironic-rooster-completion--post-command t)
+  (remove-hook 'completion-at-point-functions 'ironic-rooster-completion-at-point t)
+  (setq ironic-rooster-completion--context nil
+        ironic-rooster-completion--candidates nil
+        ironic-rooster-completion--context-tick 0
+        ironic-rooster-completion--request-tick 0
+        ironic-rooster-completion--request-callbacks nil
+        ironic-rooster-completion--candidates-tick 0))
 
-(defun irony-completion--post-command ()
-  (when (and (memq this-command irony-completion-trigger-commands)
-             (irony-completion--update-context)
-             (irony-completion-at-trigger-point-p))
-    (irony-completion--send-request)))
+(defun ironic-rooster-completion--post-command ()
+  (when (and (memq this-command ironic-rooster-completion-trigger-commands)
+             (ironic-rooster-completion--update-context)
+             (ironic-rooster-completion-at-trigger-point-p))
+    (ironic-rooster-completion--send-request)))
 
-(defun irony-completion--update-context ()
+(defun ironic-rooster-completion--update-context ()
   "Update the completion context variables based on the current position.
 
 Return t if the context has been updated, nil otherwise."
-  (let ((ctx (irony-completion--context-pos)))
-    (if (eq ctx irony-completion--context)
+  (let ((ctx (ironic-rooster-completion--context-pos)))
+    (if (eq ctx ironic-rooster-completion--context)
         nil
-      (setq irony-completion--context ctx
-            irony-completion--candidates nil
-            irony-completion--context-tick (1+ irony-completion--context-tick))
-      (unless irony-completion--context
+      (setq ironic-rooster-completion--context ctx
+            ironic-rooster-completion--candidates nil
+            ironic-rooster-completion--context-tick (1+ ironic-rooster-completion--context-tick))
+      (unless ironic-rooster-completion--context
         ;; when there is no context, assume that the candidates are available
         ;; even though they are nil
-        irony-completion--request-tick irony-completion--context-tick
-        irony-completion--request-callbacks nil
-        irony-completion--candidates nil
-        irony-completion--candidates-tick irony-completion--context-tick)
+        ironic-rooster-completion--request-tick ironic-rooster-completion--context-tick
+        ironic-rooster-completion--request-callbacks nil
+        ironic-rooster-completion--candidates nil
+        ironic-rooster-completion--candidates-tick ironic-rooster-completion--context-tick)
       t)))
 
-(defun irony-completion--post-complete-yas-snippet (str placeholders)
+(defun ironic-rooster-completion--post-complete-yas-snippet (str placeholders)
   (let ((ph-count 0)
         (from 0)
         to snippet)
@@ -177,72 +177,72 @@ Return t if the context has been updated, nil otherwise."
 
 
 ;;
-;; Interface with irony-server
+;; Interface with ironic-rooster-server
 ;;
 
-(defun irony-completion--send-request ()
+(defun ironic-rooster-completion--send-request ()
   (let (line column)
     (save-excursion
-      (goto-char (irony-completion-beginning-of-symbol))
+      (goto-char (ironic-rooster-completion-beginning-of-symbol))
       ;; `position-bytes' to handle multibytes and 'multicolumns' (i.e
       ;; tabulations) characters properly
-      (irony--without-narrowing
+      (ironic-rooster--without-narrowing
         (setq line (line-number-at-pos)
               column (1+ (- (position-bytes (point))
                             (position-bytes (point-at-bol)))))))
-    (setq irony-completion--request-callbacks nil
-          irony-completion--request-tick irony-completion--context-tick)
-    (irony--send-parse-request
+    (setq ironic-rooster-completion--request-callbacks nil
+          ironic-rooster-completion--request-tick ironic-rooster-completion--context-tick)
+    (ironic-rooster--send-parse-request
      "complete"
-     (list 'irony-completion--request-handler irony-completion--context-tick)
+     (list 'ironic-rooster-completion--request-handler ironic-rooster-completion--context-tick)
      (number-to-string line)
      (number-to-string column))))
 
-(defun irony-completion--request-handler (candidates tick)
-  (when (eq tick irony-completion--context-tick)
+(defun ironic-rooster-completion--request-handler (candidates tick)
+  (when (eq tick ironic-rooster-completion--context-tick)
     (setq
-     irony-completion--candidates-tick tick
-     irony-completion--candidates candidates)
-    (mapc 'funcall irony-completion--request-callbacks)))
+     ironic-rooster-completion--candidates-tick tick
+     ironic-rooster-completion--candidates candidates)
+    (mapc 'funcall ironic-rooster-completion--request-callbacks)))
 
-(defun irony-completion--still-completing-p ()
-  (unless (irony-completion-candidates-available-p)
-    (eq irony-completion--request-tick irony-completion--context-tick)))
+(defun ironic-rooster-completion--still-completing-p ()
+  (unless (ironic-rooster-completion-candidates-available-p)
+    (eq ironic-rooster-completion--request-tick ironic-rooster-completion--context-tick)))
 
 
 ;;
-;; Irony Completion Interface
+;; Ironic-Rooster Completion Interface
 ;;
 
-(defun irony-completion-typed-text (candidate)
+(defun ironic-rooster-completion-typed-text (candidate)
   (nth 0 candidate))
 
-(defun irony-completion-priority (candidate)
+(defun ironic-rooster-completion-priority (candidate)
   (nth 1 candidate))
 
-(defun irony-completion-type (candidate)
+(defun ironic-rooster-completion-type (candidate)
   (nth 2 candidate))
 
-(defun irony-completion-brief (candidate)
+(defun ironic-rooster-completion-brief (candidate)
   (nth 3 candidate))
 
-(defun irony-completion-annotation (candidate)
+(defun ironic-rooster-completion-annotation (candidate)
   (substring (nth 4 candidate) (nth 5 candidate)))
 
-(defun irony-completion-post-comp-str (candidate)
+(defun ironic-rooster-completion-post-comp-str (candidate)
   (car (nth 6 candidate)))
 
-(defun irony-completion-post-comp-placeholders (candidate)
+(defun ironic-rooster-completion-post-comp-placeholders (candidate)
   (cdr (nth 6 candidate)))
 
-(defun irony-completion-candidates-available-p ()
-  (and (eq (irony-completion--context-pos) irony-completion--context)
-       (eq irony-completion--candidates-tick irony-completion--context-tick)))
+(defun ironic-rooster-completion-candidates-available-p ()
+  (and (eq (ironic-rooster-completion--context-pos) ironic-rooster-completion--context)
+       (eq ironic-rooster-completion--candidates-tick ironic-rooster-completion--context-tick)))
 
-(defun irony-completion-candidates ()
+(defun ironic-rooster-completion-candidates ()
   "Return the list of candidates at point, if available.
 
-Use the function `irony-completion-candidates-available-p' to
+Use the function `ironic-rooster-completion-candidates-available-p' to
 know if the candidate list is available.
 
 A candidate is composed of the following elements:
@@ -260,36 +260,36 @@ A candidate is composed of the following elements:
     more indices. These indices work by pairs and describe ranges
     of placeholder text.
     Example: (\"(int a, int b)\" 1 6 8 13)"
-  (and (irony-completion-candidates-available-p)
-       irony-completion--candidates))
+  (and (ironic-rooster-completion-candidates-available-p)
+       ironic-rooster-completion--candidates))
 
-(defun irony-completion-candidates-async (callback)
+(defun ironic-rooster-completion-candidates-async (callback)
   "Call CALLBACK when asynchronous completion is available.
 
 Note that:
  - If the candidates are already available, CALLBACK is called
    immediately.
  - In some circumstances, CALLBACK may not be called. i.e:
-   irony-server crashes, ..."
-  (irony-completion--update-context)
-  (if (irony-completion-candidates-available-p)
+   ironic-rooster-server crashes, ..."
+  (ironic-rooster-completion--update-context)
+  (if (ironic-rooster-completion-candidates-available-p)
       (funcall callback)
-    (when irony-completion--context
-      (unless (irony-completion--still-completing-p)
-        (irony-completion--send-request))
-      (setq irony-completion--request-callbacks
-            (cons callback irony-completion--request-callbacks)))))
+    (when ironic-rooster-completion--context
+      (unless (ironic-rooster-completion--still-completing-p)
+        (ironic-rooster-completion--send-request))
+      (setq ironic-rooster-completion--request-callbacks
+            (cons callback ironic-rooster-completion--request-callbacks)))))
 
-(defun irony-completion-post-complete (candidate)
-  (let ((str (irony-completion-post-comp-str candidate))
-        (placeholders (irony-completion-post-comp-placeholders candidate)))
-    (if (and placeholders (irony-snippet-available-p))
-        (irony-snippet-expand
-         (irony-completion--post-complete-yas-snippet str placeholders))
+(defun ironic-rooster-completion-post-complete (candidate)
+  (let ((str (ironic-rooster-completion-post-comp-str candidate))
+        (placeholders (ironic-rooster-completion-post-comp-placeholders candidate)))
+    (if (and placeholders (ironic-rooster-snippet-available-p))
+        (ironic-rooster-snippet-expand
+         (ironic-rooster-completion--post-complete-yas-snippet str placeholders))
       (insert (substring str 0 (car placeholders))))))
 
-(defun irony-completion-at-trigger-point-p ()
-  (when (eq (point) (irony-completion-beginning-of-symbol))
+(defun ironic-rooster-completion-at-trigger-point-p ()
+  (when (eq (point) (ironic-rooster-completion-beginning-of-symbol))
     (save-excursion
       (cond
        ;; use `re-search-backward' so that the cursor is moved just before the
@@ -311,7 +311,7 @@ Note that:
                   (looking-back "[^_a-zA-Z0-9][[:digit:]]+" (point-at-bol))))
           ;; except the above exceptions we use a "whitelist" for the places
           ;; where it looks like a member access
-          (irony-completion--skip-whitespace-backwards)
+          (ironic-rooster-completion--skip-whitespace-backwards)
           (or
            ;; after brackets consider it's a member access so things like
            ;; 'getFoo().|' match
@@ -331,34 +331,34 @@ Note that:
 
 
 ;;
-;; Irony CAPF
+;; Ironic-Rooster CAPF
 ;;
 
-(defun irony-completion--at-point-annotate (candidate)
-  (irony-completion-annotation
-   (get-text-property 0 'irony-capf candidate)))
+(defun ironic-rooster-completion--at-point-annotate (candidate)
+  (ironic-rooster-completion-annotation
+   (get-text-property 0 'ironic-rooster-capf candidate)))
 
 ;;;###autoload
-(defun irony-completion-at-point ()
-  (when (and irony-mode (irony-completion-candidates-available-p))
-    (let ((symbol-bounds (irony-completion-symbol-bounds)))
+(defun ironic-rooster-completion-at-point ()
+  (when (and ironic-rooster-mode (ironic-rooster-completion-candidates-available-p))
+    (let ((symbol-bounds (ironic-rooster-completion-symbol-bounds)))
       (list
        (car symbol-bounds)              ;start
        (cdr symbol-bounds)              ;end
        (mapcar #'(lambda (candidate)    ;completion table
-                   (propertize (car candidate) 'irony-capf candidate))
-               (irony-completion-candidates))
-       :annotation-function 'irony-completion--at-point-annotate))))
+                   (propertize (car candidate) 'ironic-rooster-capf candidate))
+               (ironic-rooster-completion-candidates))
+       :annotation-function 'ironic-rooster-completion--at-point-annotate))))
 
 ;;;###autoload
-(defun irony-completion-at-point-async ()
+(defun ironic-rooster-completion-at-point-async ()
   (interactive)
-  (irony-completion-candidates-async 'completion-at-point))
+  (ironic-rooster-completion-candidates-async 'completion-at-point))
 
-(provide 'irony-completion)
+(provide 'ironic-rooster-completion)
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not cl-functions)
 ;; End:
 
-;;; irony-completion.el ends here
+;;; ironic-rooster-completion.el ends here

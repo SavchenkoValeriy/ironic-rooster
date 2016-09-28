@@ -1,4 +1,4 @@
-;;; irony-cdb-json.el --- JSON Compilation Database support for irony
+;;; ironic-rooster-cdb-json.el --- JSON Compilation Database support for ironic-rooster
 
 ;; Copyright (C) 2014  Guillaume Papin
 
@@ -20,35 +20,35 @@
 
 ;;; Commentary:
 ;;
-;; JSON Compilation Database support for Irony, see
+;; JSON Compilation Database support for Ironic-Rooster, see
 ;; http://clang.llvm.org/docs/JSONCompilationDatabase.html.
 ;;
 
 ;;; Code:
 
-(require 'irony-cdb)
+(require 'ironic-rooster-cdb)
 
 (require 'cl-lib)
 
 (require 'json)
 (require 'pp)
 
-(defvar irony-cdb-json--project-alist nil
+(defvar ironic-rooster-cdb-json--project-alist nil
   "Alist of source directory and compile_commands.json locations.
 
 Note, the compile_commands.json location may be relative to the
 source directory.")
 
-(defconst irony-cdb-json--project-alist-file
-  (concat irony-user-dir "cdb-json-projects"))
+(defconst ironic-rooster-cdb-json--project-alist-file
+  (concat ironic-rooster-user-dir "cdb-json-projects"))
 
 ;;;###autoload
-(defun irony-cdb-json (command &rest args)
+(defun ironic-rooster-cdb-json (command &rest args)
   (cl-case command
-    (get-compile-options (irony-cdb-json--get-compile-options))))
+    (get-compile-options (ironic-rooster-cdb-json--get-compile-options))))
 
 ;;;###autoload
-(defun irony-cdb-json-add-compile-commands-path (project-root
+(defun ironic-rooster-cdb-json-add-compile-commands-path (project-root
                                                  compile-commands-path)
   "Add an out-of-source compilation database.
 
@@ -63,32 +63,32 @@ directories to project directory."
      (let ((proot (read-directory-name "Project root:" nil nil t)))
        (list proot (read-file-name "Compile commands:" proot nil t
                                    "compile_commands.json")))))
-  (add-to-list 'irony-cdb-json--project-alist
+  (add-to-list 'ironic-rooster-cdb-json--project-alist
                (cons (expand-file-name project-root)
                      (expand-file-name compile-commands-path)))
-  (irony-cdb-json--save-project-alist)
+  (ironic-rooster-cdb-json--save-project-alist)
 
-  ; and tell irony to load it now
-  (irony-cdb-autosetup-compile-options))
+  ; and tell ironic-rooster to load it now
+  (ironic-rooster-cdb-autosetup-compile-options))
 
-(defun irony-cdb-json--put-first (pos target-list)
+(defun ironic-rooster-cdb-json--put-first (pos target-list)
   (if (>= pos (length target-list))
       target-list
     (let ((elm (nth pos target-list)))
       (append (list elm) (delete elm target-list)))))
 
-(defun irony-cdb-json--choose-cdb ()
+(defun ironic-rooster-cdb-json--choose-cdb ()
   "Prompt to select CDB from current project root."
-  (let* ((proot (irony-cdb-json--find-best-prefix-path
-                 (irony-cdb-json--target-path)
-                 (mapcar 'car irony-cdb-json--project-alist)))
+  (let* ((proot (ironic-rooster-cdb-json--find-best-prefix-path
+                 (ironic-rooster-cdb-json--target-path)
+                 (mapcar 'car ironic-rooster-cdb-json--project-alist)))
          (cdbs (mapcar 'cdr
                        (cl-remove-if-not (lambda (x) (string-equal proot (car x)))
-                                         irony-cdb-json--project-alist))))
-    (completing-read "Choose Irony CDB: " cdbs nil 'require-match nil)))
+                                         ironic-rooster-cdb-json--project-alist))))
+    (completing-read "Choose Ironic-Rooster CDB: " cdbs nil 'require-match nil)))
 
 ;;;###autoload
-(defun irony-cdb-json-select ()
+(defun ironic-rooster-cdb-json-select ()
   "Select CDB to use with a prompt.
 
 It is useful when you have several CDBs with the same project
@@ -99,65 +99,65 @@ it could easily be used with other completion functions by
 temporarily using a let-bind on `completing-read-function'. Or
 even helm by enabling `helm-mode' before calling the function."
   (interactive)
-  (let ((pos (cl-position (irony-cdb-json--choose-cdb)
-                          irony-cdb-json--project-alist
+  (let ((pos (cl-position (ironic-rooster-cdb-json--choose-cdb)
+                          ironic-rooster-cdb-json--project-alist
                           :test (lambda (x y) (string-equal x (cdr y))))))
-    (setq irony-cdb-json--project-alist
-          (irony-cdb-json--put-first pos irony-cdb-json--project-alist))
-    (irony-cdb-json--save-project-alist)
-    (irony-cdb-autosetup-compile-options)))
+    (setq ironic-rooster-cdb-json--project-alist
+          (ironic-rooster-cdb-json--put-first pos ironic-rooster-cdb-json--project-alist))
+    (ironic-rooster-cdb-json--save-project-alist)
+    (ironic-rooster-cdb-autosetup-compile-options)))
 
-(defun irony-cdb-json--last-mod (file)
+(defun ironic-rooster-cdb-json--last-mod (file)
   "File modification time or null time if file doesn't exist."
   (or (nth 5 (file-attributes file))
       '(0 0 0 0)))
 
 ;;;###autoload
-(defun irony-cdb-json-select-most-recent ()
+(defun ironic-rooster-cdb-json-select-most-recent ()
   "Select CDB that is most recently modified."
   (interactive)
-  (setq irony-cdb-json--project-alist
-        (sort irony-cdb-json--project-alist
+  (setq ironic-rooster-cdb-json--project-alist
+        (sort ironic-rooster-cdb-json--project-alist
               (lambda (x y)
-                (time-less-p (irony-cdb-json--last-mod (cdr y))
-                             (irony-cdb-json--last-mod (cdr x))))))
-  (irony-cdb-json--save-project-alist)
-  (irony-cdb-autosetup-compile-options))
+                (time-less-p (ironic-rooster-cdb-json--last-mod (cdr y))
+                             (ironic-rooster-cdb-json--last-mod (cdr x))))))
+  (ironic-rooster-cdb-json--save-project-alist)
+  (ironic-rooster-cdb-autosetup-compile-options))
 
-(defun irony-cdb-json--get-compile-options ()
-  (irony--awhen (irony-cdb-json--locate-db)
-    (let ((db (irony-cdb-json--load-db it)))
-      (irony--aif (irony-cdb-json--exact-flags db)
+(defun ironic-rooster-cdb-json--get-compile-options ()
+  (ironic-rooster--awhen (ironic-rooster-cdb-json--locate-db)
+    (let ((db (ironic-rooster-cdb-json--load-db it)))
+      (ironic-rooster--aif (ironic-rooster-cdb-json--exact-flags db)
           it
-        (let ((dir-cdb (irony-cdb-json--compute-directory-cdb db)))
-          (irony-cdb-json--guess-flags dir-cdb))))))
+        (let ((dir-cdb (ironic-rooster-cdb-json--compute-directory-cdb db)))
+          (ironic-rooster-cdb-json--guess-flags dir-cdb))))))
 
-(defsubst irony-cdb-json--target-path ()
+(defsubst ironic-rooster-cdb-json--target-path ()
   (or buffer-file-name (expand-file-name default-directory)))
 
-(defun irony-cdb-json--ensure-project-alist-loaded ()
-  (unless irony-cdb-json--project-alist
-    (irony-cdb-json--load-project-alist)))
+(defun ironic-rooster-cdb-json--ensure-project-alist-loaded ()
+  (unless ironic-rooster-cdb-json--project-alist
+    (ironic-rooster-cdb-json--load-project-alist)))
 
-(defun irony-cdb-json--save-project-alist ()
-  (with-temp-file irony-cdb-json--project-alist-file
+(defun ironic-rooster-cdb-json--save-project-alist ()
+  (with-temp-file ironic-rooster-cdb-json--project-alist-file
     (insert ";; -*- emacs-lisp -*-\n\
 ;;\n\
 ;; JSON Compilation Database project list.\n\
 ;;\n\
-;; File auto-generated by irony-cdb-json.\n\
+;; File auto-generated by ironic-rooster-cdb-json.\n\
 ;;\n")
-    (pp irony-cdb-json--project-alist (current-buffer))
+    (pp ironic-rooster-cdb-json--project-alist (current-buffer))
     (insert "\n")))
 
-(defun irony-cdb-json--load-project-alist ()
-  (when (file-exists-p irony-cdb-json--project-alist-file)
-    (setq irony-cdb-json--project-alist
+(defun ironic-rooster-cdb-json--load-project-alist ()
+  (when (file-exists-p ironic-rooster-cdb-json--project-alist-file)
+    (setq ironic-rooster-cdb-json--project-alist
           (with-temp-buffer
-            (insert-file-contents irony-cdb-json--project-alist-file)
+            (insert-file-contents ironic-rooster-cdb-json--project-alist-file)
             (read (current-buffer))))))
 
-(defun irony-cdb-json--find-best-prefix-path (file prefixes)
+(defun ironic-rooster-cdb-json--find-best-prefix-path (file prefixes)
   (cl-loop for prefix in prefixes
            with found = nil
            ;; keep the closest directory
@@ -166,35 +166,35 @@ even helm by enabling `helm-mode' before calling the function."
            do (setq found prefix)
            finally return found))
 
-(defun irony-cdb-json--locate-db ()
-  (irony-cdb-json--ensure-project-alist-loaded)
-  (irony--aif (irony-cdb-json--find-best-prefix-path
-               (irony-cdb-json--target-path)
-               (mapcar 'car irony-cdb-json--project-alist))
+(defun ironic-rooster-cdb-json--locate-db ()
+  (ironic-rooster-cdb-json--ensure-project-alist-loaded)
+  (ironic-rooster--aif (ironic-rooster-cdb-json--find-best-prefix-path
+               (ironic-rooster-cdb-json--target-path)
+               (mapcar 'car ironic-rooster-cdb-json--project-alist))
       (expand-file-name
-       (cdr (assoc it irony-cdb-json--project-alist))
+       (cdr (assoc it ironic-rooster-cdb-json--project-alist))
        it)
     ;; If not in the project table, look in the dominating directories
-    (irony--awhen (irony-cdb--locate-dominating-file-with-dirs
-                   (irony-cdb-json--target-path)
+    (ironic-rooster--awhen (ironic-rooster-cdb--locate-dominating-file-with-dirs
+                   (ironic-rooster-cdb-json--target-path)
                    "compile_commands.json"
-                   irony-cdb-search-directory-list)
+                   ironic-rooster-cdb-search-directory-list)
       (expand-file-name it))))
 
-(defun irony-cdb-json--load-db (json-file)
-  (delq nil (mapcar #'irony-cdb-json--transform-compile-command
+(defun ironic-rooster-cdb-json--load-db (json-file)
+  (delq nil (mapcar #'ironic-rooster-cdb-json--transform-compile-command
                     ;; JSON read may throw
                     (json-read-file json-file))))
 
-(defun irony-cdb-json--exact-flags (file-cdb)
+(defun ironic-rooster-cdb-json--exact-flags (file-cdb)
   (when buffer-file-name
     (mapcar #'(lambda (e)
                 (cons (nth 1 e) (nth 2 e)))
-            (irony--assoc-all buffer-file-name file-cdb))))
+            (ironic-rooster--assoc-all buffer-file-name file-cdb))))
 
-(defun irony-cdb-json--guess-flags (dir-cdb)
+(defun ironic-rooster-cdb-json--guess-flags (dir-cdb)
   (cl-loop for e in dir-cdb
-           with buf-path = (irony-cdb-json--target-path)
+           with buf-path = (ironic-rooster-cdb-json--target-path)
            with found = nil
            for dir = (car e)
            ;; keep the closest directory
@@ -203,18 +203,18 @@ even helm by enabling `helm-mode' before calling the function."
            do (setq found e)
            finally return (list (cons (nth 1 found) (nth 2 found)))))
 
-(defsubst irony-cdb-json--compile-command-directory (compile-command)
+(defsubst ironic-rooster-cdb-json--compile-command-directory (compile-command)
   (cdr (assq 'directory compile-command)))
 
-(defsubst irony-cdb-json--compile-command-file (compile-command)
+(defsubst ironic-rooster-cdb-json--compile-command-file (compile-command)
   (cdr (assq 'file compile-command)))
 
-(defun irony-cdb-json--compile-command-options (compile-command)
+(defun ironic-rooster-cdb-json--compile-command-options (compile-command)
   "Return the compile options of COMPILE-COMMAND as a list."
-  (irony-cdb--remove-compiler-from-flags
-   (irony--split-command-line (cdr (assq 'command compile-command)))))
+  (ironic-rooster-cdb--remove-compiler-from-flags
+   (ironic-rooster--split-command-line (cdr (assq 'command compile-command)))))
 
-(defun irony-cdb-json--adjust-compile-options (compile-options file default-dir)
+(defun ironic-rooster-cdb-json--adjust-compile-options (compile-options file default-dir)
   "Adjust COMPILE-OPTIONS to only use options useful for parsing.
 
 COMPILE-OPTIONS is modified by side effects but the returned list
@@ -250,7 +250,7 @@ Relative paths are relative to DEFAULT-DIR."
         (setq it (cdr it)))))
     (cdr head)))
 
-(defun irony-cdb-json--transform-compile-command (compile-command)
+(defun ironic-rooster-cdb-json--transform-compile-command (compile-command)
   "Transform a compile command in the JSON compilation database
 into a friendlier format.
 
@@ -262,28 +262,28 @@ The returned value is a list composed of the following elements:
 
 Return nil if the compile command is invalid or the compile
 options are empty."
-  (let* ((directory (irony-cdb-json--compile-command-directory compile-command))
+  (let* ((directory (ironic-rooster-cdb-json--compile-command-directory compile-command))
          (path (expand-file-name
-                (irony-cdb-json--compile-command-file compile-command) directory))
-         (options (irony-cdb-json--compile-command-options compile-command)))
+                (ironic-rooster-cdb-json--compile-command-file compile-command) directory))
+         (options (ironic-rooster-cdb-json--compile-command-options compile-command)))
     (when (and path directory options)
       (list path
-            (irony-cdb-json--adjust-compile-options options path directory)
+            (ironic-rooster-cdb-json--adjust-compile-options options path directory)
             directory))))
 
-(defun irony-cdb-json--compute-directory-cdb (file-cdb)
+(defun ironic-rooster-cdb-json--compute-directory-cdb (file-cdb)
   ;; collect flags by directory, e.g: for headers in source directories or
   ;; new files that are not yet present in the compilation database
-  (let ((dir-cdb (irony-cdb-json--collect-compile-options-by-dir file-cdb)))
+  (let ((dir-cdb (ironic-rooster-cdb-json--collect-compile-options-by-dir file-cdb)))
     (nconc dir-cdb
            ;; collect flags for header search paths too
-           (irony-cdb-json--collect-compile-options-for-include-dirs dir-cdb))))
+           (ironic-rooster-cdb-json--collect-compile-options-for-include-dirs dir-cdb))))
 
-(defun irony-cdb-json--collect-compile-options-by-dir (file-cdb)
+(defun ironic-rooster-cdb-json--collect-compile-options-by-dir (file-cdb)
   "Collect the compile options per directory from a file compilation database.
 
 The returned value similar to
-`irony-cdb-json--transform-compile-command' except for the first
+`ironic-rooster-cdb-json--transform-compile-command' except for the first
 argument which represents a whole directory (ending with slash on
 Unix, `file-name-as-directory') instead of a single file."
   (let ((dir-cdb (delete-dups
@@ -296,24 +296,24 @@ Unix, `file-name-as-directory') instead of a single file."
     ;; will result in duplicated compile options for the subdirectory 'sub/'.
     dir-cdb))
 
-(defun irony-cdb-json--collect-compile-options-for-include-dirs (dir-cdb)
+(defun ironic-rooster-cdb-json--collect-compile-options-for-include-dirs (dir-cdb)
   "Guess the compile options to use for directories in the search path.
 
 The returned value is in the same format as the input value, see
-`irony-cdb-json--collect-compile-options-for-include-dirs'."
+`ironic-rooster-cdb-json--collect-compile-options-for-include-dirs'."
   (let ((include-dirs (delete-dups (mapcar 'car dir-cdb)))
         out)
     (dolist (e dir-cdb)
-      (dolist (dir (irony--extract-user-search-paths (nth 1 e) (nth 2 e)))
+      (dolist (dir (ironic-rooster--extract-user-search-paths (nth 1 e) (nth 2 e)))
         (unless (member dir include-dirs)
           (setq include-dirs (cons dir include-dirs)
                 out (cons (cons dir (cdr e)) out)))))
     out))
 
-(provide 'irony-cdb-json)
+(provide 'ironic-rooster-cdb-json)
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not cl-functions)
 ;; End:
 
-;;; irony-cdb-json ends here
+;;; ironic-rooster-cdb-json ends here

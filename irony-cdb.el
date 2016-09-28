@@ -1,4 +1,4 @@
-;;; irony-cdb.el --- compilation databases support for irony
+;;; ironic-rooster-cdb.el --- compilation databases support for ironic-rooster
 
 ;; Copyright (C) 2012-2014  Guillaume Papin
 
@@ -20,7 +20,7 @@
 
 ;;; Commentary:
 ;;
-;; This file defines the compilation database interface of irony-mode.
+;; This file defines the compilation database interface of ironic-rooster-mode.
 ;;
 ;; Note:For compilation database that looks for a specific file, such as
 ;; .clang_complete or compile_commands.json, favor `locate-dominating-file' to a
@@ -30,26 +30,26 @@
 
 ;;; Code:
 
-(require 'irony)
+(require 'ironic-rooster)
 
 (require 'cl-lib)
 
-(autoload 'irony-cdb-clang-complete "irony-cdb-clang-complete")
-(autoload 'irony-cdb-json "irony-cdb-json")
-(autoload 'irony-cdb-libclang "irony-cdb-libclang")
+(autoload 'ironic-rooster-cdb-clang-complete "ironic-rooster-cdb-clang-complete")
+(autoload 'ironic-rooster-cdb-json "ironic-rooster-cdb-json")
+(autoload 'ironic-rooster-cdb-libclang "ironic-rooster-cdb-libclang")
 
 
 ;;
 ;; Customizable variables
 ;;
 
-(defgroup irony-cdb nil
-  "Irony's compilation database interface."
-  :group 'irony)
+(defgroup ironic-rooster-cdb nil
+  "Ironic-Rooster's compilation database interface."
+  :group 'ironic-rooster)
 
-(defcustom irony-cdb-compilation-databases '(irony-cdb-clang-complete
-                                             irony-cdb-libclang
-                                             irony-cdb-json)
+(defcustom ironic-rooster-cdb-compilation-databases '(ironic-rooster-cdb-clang-complete
+                                             ironic-rooster-cdb-libclang
+                                             ironic-rooster-cdb-json)
   "List of active compilation databases.
 
 The compilation database should respond for the following commands:
@@ -61,51 +61,51 @@ and the second element the working directory expected for these
 commands. The compilation database should return an empty list
 for files that it cannot handle."
   :type '(repeat function)
-  :group 'irony-cdb)
+  :group 'ironic-rooster-cdb)
 
-(defcustom irony-cdb-search-directory-list '("." "build")
+(defcustom ironic-rooster-cdb-search-directory-list '("." "build")
   "List of relative subdirectory paths to be searched for cdb files
 
-Irony looks for cdb files in any of the supported format by checking
+Ironic-Rooster looks for cdb files in any of the supported format by checking
 each directory from the currently loaded file and recursively through
 parent directories until it hits the root directory or a cdb is
-found. At each level of the search irony looks at the subdirectories
-listed in `'irony-cdb-search-directory-list` for the files. Customize this
+found. At each level of the search ironic-rooster looks at the subdirectories
+listed in `'ironic-rooster-cdb-search-directory-list` for the files. Customize this
 list if your cdb is held in a custom directory within you project,
 such as a custom named build directory.
 "
   :type '(repeat string)
-  :group 'irony-cdb)
+  :group 'ironic-rooster-cdb)
 
 
 ;;
 ;; Internal variables
 ;;
 
-(defvar-local irony-cdb--compilation-database nil)
+(defvar-local ironic-rooster-cdb--compilation-database nil)
 
 
 ;;
-;; Irony Compilation Database Interface
+;; Ironic-Rooster Compilation Database Interface
 ;;
 
 ;;;###autoload
-(defun irony-cdb-autosetup-compile-options ()
+(defun ironic-rooster-cdb-autosetup-compile-options ()
   (interactive)
-  (irony--awhen (irony-cdb--autodetect-compile-options)
-    (setq irony-cdb--compilation-database (nth 0 it))
-    (irony-cdb--update-compile-options (nth 1 it) (nth 2 it))))
+  (ironic-rooster--awhen (ironic-rooster-cdb--autodetect-compile-options)
+    (setq ironic-rooster-cdb--compilation-database (nth 0 it))
+    (ironic-rooster-cdb--update-compile-options (nth 1 it) (nth 2 it))))
 
 ;;;###autoload
-(defun irony-cdb-menu ()
+(defun ironic-rooster-cdb-menu ()
   (interactive)
-  (let ((compilation-database irony-cdb--compilation-database)
-        (working-directory irony--working-directory)
-        (compile-options irony--compile-options))
+  (let ((compilation-database ironic-rooster-cdb--compilation-database)
+        (working-directory ironic-rooster--working-directory)
+        (compile-options ironic-rooster--compile-options))
     (save-excursion
       (save-window-excursion
         (delete-other-windows)
-        (let ((buffer (get-buffer-create "*Irony/Compilation DB Menu*")))
+        (let ((buffer (get-buffer-create "*Ironic-Rooster/Compilation DB Menu*")))
           (with-current-buffer buffer
             (erase-buffer)
             (if (null compilation-database)
@@ -119,7 +119,7 @@ such as a custom named build directory.
           (let ((pop-up-windows t))
             (display-buffer buffer t))
           (fit-window-to-buffer (get-buffer-window buffer))
-          (irony--read-char-choice "Irony CDB Buffer" (list ?q)))))
+          (ironic-rooster--read-char-choice "Ironic-Rooster CDB Buffer" (list ?q)))))
     ;; clear `read-char-choice' prompt
     (message "")))
 
@@ -128,7 +128,7 @@ such as a custom named build directory.
 ;; Functions
 ;;
 
-(defun irony-cdb--choose-closest-path (file paths)
+(defun ironic-rooster-cdb--choose-closest-path (file paths)
   "Find the \"best\" path in PATHS matching FILE
 
 If any paths in PATHS is belongs to the same directory
@@ -161,7 +161,7 @@ Returns nil if paths isn't a list of at least one element.
                 (setq best-path path)))
          finally return best-path))))
 
-(defun irony-cdb--locate-dominating-file-with-dirs (file
+(defun ironic-rooster-cdb--locate-dominating-file-with-dirs (file
                                                     name
                                                     subdirectories)
   "Convenience wrapper around `locate-dominating-file'
@@ -176,43 +176,43 @@ returns the full path to file if found, or nil otherwise."
             for relpath = (concat (file-name-as-directory subdir) name)
             for match-maybe = (locate-dominating-file file relpath)
             when match-maybe collect (expand-file-name (concat match-maybe relpath)))))
-    (irony-cdb--choose-closest-path file candidates)))
+    (ironic-rooster-cdb--choose-closest-path file candidates)))
 
 
-(defun irony-cdb--update-compile-options (compile-options
+(defun ironic-rooster-cdb--update-compile-options (compile-options
                                           &optional working-directory)
-  (setq irony--compile-options compile-options
-        irony--working-directory working-directory))
+  (setq ironic-rooster--compile-options compile-options
+        ironic-rooster--working-directory working-directory))
 
-(defun irony-cdb--autodetect-compile-options ()
+(defun ironic-rooster-cdb--autodetect-compile-options ()
   (catch 'found
-    (dolist (compilation-database irony-cdb-compilation-databases)
-      (with-demoted-errors "Irony CDB: error in compilation database: %S"
-        (irony--awhen (funcall compilation-database 'get-compile-options)
+    (dolist (compilation-database ironic-rooster-cdb-compilation-databases)
+      (with-demoted-errors "Ironic-Rooster CDB: error in compilation database: %S"
+        (ironic-rooster--awhen (funcall compilation-database 'get-compile-options)
           (throw 'found (list compilation-database
                               (caar it)
                               (cdar it))))))))
 
-(defun irony-cdb--string-suffix-p (suffix string &optional ignore-case)
+(defun ironic-rooster-cdb--string-suffix-p (suffix string &optional ignore-case)
   "Return non-nil if SUFFIX is a suffix of STRING."
   (let ((start-pos (- (length string) (length suffix))))
     (and (>= start-pos 0)
          (eq t (compare-strings suffix nil nil
                                 string start-pos nil ignore-case)))))
 
-(defun irony-cdb--remove-compiler-from-flags (flags)
+(defun ironic-rooster-cdb--remove-compiler-from-flags (flags)
   "Remove the compiler from FLAGS read from a compilation database.
 
 When using ccache, the compiler might be present in FLAGS since
 the compiler is `ccache compiler'."
   (let* ((first (car flags))
          (flags (cdr flags)))
-    (if (irony-cdb--string-suffix-p "ccache" first) (cdr flags) flags)))
+    (if (ironic-rooster-cdb--string-suffix-p "ccache" first) (cdr flags) flags)))
 
-(provide 'irony-cdb)
+(provide 'ironic-rooster-cdb)
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not cl-functions)
 ;; End:
 
-;;; irony-cdb.el ends here
+;;; ironic-rooster-cdb.el ends here

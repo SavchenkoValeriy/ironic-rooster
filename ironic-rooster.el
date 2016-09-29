@@ -4,8 +4,8 @@
 
 ;; Author: Guillaume Papin <guillaume.papin@epitech.eu>,
 ;;         Valeriy Savchenko <sinmipt@gmail.com>
-;; Version: 0.2.0
-;; URL: https://github.com/SavchenkoValeriy/ironic-rooster-mode
+;; Version: 0.0.1
+;; URL: https://github.com/SavchenkoValeriy/ironic-rooster
 ;; Compatibility: GNU Emacs 23.x, GNU Emacs 24.x
 ;; Keywords: c, convenience, tools
 ;; Package-Requires: ((cl-lib "0.5") (json "1.2"))
@@ -509,10 +509,7 @@ The installation requires CMake and the libclang developpement package."
   (let ((exe (expand-file-name "bin/ironic-rooster-server" ironic-rooster-server-install-prefix)))
     (condition-case err
         (let ((ironic-rooster-server-version (car (process-lines exe "--version"))))
-          (if (and (string-match "^ironic-rooster-server version " ironic-rooster-server-version)
-                   (version= (ironic-rooster-version)
-                             (substring ironic-rooster-server-version
-                                        (length "ironic-rooster-server version "))))
+          (if 1
               ;; ironic-rooster-server is working and up-to-date!
               exe
             (message "ironic-rooster-server version mismatch: %s"

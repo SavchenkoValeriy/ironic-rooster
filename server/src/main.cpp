@@ -42,7 +42,7 @@ static void printHelp() {
 static void printVersion() {
   // do not change the format for the first line, external programs should be
   // able to rely on it
-  std::cout << "irony-server version " IRONY_PACKAGE_VERSION "\n";
+  std::cout << "irony-server version " IRONIC_ROOSTER_PACKAGE_VERSION "\n";
 
   CXString cxVersionString = clang_getClangVersion();
   std::cout << clang_getCString(cxVersionString) << "\n";

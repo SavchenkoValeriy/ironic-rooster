@@ -15,7 +15,7 @@ endif()
 # not to be taken as a module-definition file to link on Windows
 set_source_files_properties(Commands.def PROPERTIES HEADER_FILE_ONLY TRUE)
 
-add_executable(irony-server
+add_executable(ironic-rooster-server
   support/CommandLineParser.cpp
   support/CommandLineParser.h
   support/iomanip_quoted.h
@@ -39,12 +39,12 @@ function(irony_find_package_version OUTPUT_VAR)
   # this is a hack that force CMake to reconfigure, it is necessary to see if
   # the version in irony.el has changed, this is not possible to add the
   # definitions at build time
-  configure_file(${PROJECT_SOURCE_DIR}/../irony.el
-    ${CMAKE_CURRENT_BINARY_DIR}/irony.el
+  configure_file(${PROJECT_SOURCE_DIR}/../ironic-rooster.el
+    ${CMAKE_CURRENT_BINARY_DIR}/ironic-rooster.el
     COPYONLY)
 
   set(version_header "\;\; Version: ")
-  file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/irony.el version
+  file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/ironic-rooster.el version
     LIMIT_COUNT 1
     REGEX "^${version_header}*")
 
@@ -57,13 +57,13 @@ function(irony_find_package_version OUTPUT_VAR)
   set(${OUTPUT_VAR} ${package_version} PARENT_SCOPE)
 endfunction()
 
-irony_find_package_version(IRONY_PACKAGE_VERSION)
-message(STATUS "Irony package version is '${IRONY_PACKAGE_VERSION}'")
+irony_find_package_version(IRONIC_ROOSTER_PACKAGE_VERSION)
+message(STATUS "Ironic-Rooster package version is '${IRONIC_ROOSTER_PACKAGE_VERSION}'")
 
 set_source_files_properties(main.cpp
   PROPERTIES
-  COMPILE_DEFINITIONS IRONY_PACKAGE_VERSION=\"${IRONY_PACKAGE_VERSION}\")
+  COMPILE_DEFINITIONS IRONIC_ROOSTER_PACKAGE_VERSION=\"${IRONIC_ROOSTER_PACKAGE_VERSION}\")
 
-target_link_libraries(irony-server ${LIBCLANG_LIBRARIES})
+target_link_libraries(ironic-rooster-server ${LIBCLANG_LIBRARIES})
 
-install(TARGETS irony-server DESTINATION bin)
+install(TARGETS ironic-rooster-server DESTINATION bin)
